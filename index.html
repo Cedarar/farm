@@ -1284,7 +1284,7 @@ function drawPoster() {
     drawPlaceholder(ctx, W);
     drawPosterForeground(ctx, W, H);
   };
-  img.src = `images/${currentCode}.png`;
+  img.src = `${currentCode}.png`;
 }
 
 function drawPosterBackground(ctx, W, H) {
@@ -1330,7 +1330,7 @@ function drawPlaceholder(ctx, W) {
   ctx.fillText("未找到角色图片", W / 2, 380);
   ctx.font = "16px -apple-system, PingFang SC, sans-serif";
   ctx.fillStyle = "#666";
-  ctx.fillText(`请放置：images/${currentCode}.png`, W / 2, 410);
+  ctx.fillText(`请放置：${currentCode}.png`, W / 2, 410);
 }
 
 function drawPosterForeground(ctx, W, H) {
@@ -1385,7 +1385,9 @@ function drawPosterForeground(ctx, W, H) {
 }
 
 function drawQRCode(ctx, W) {
-  const url = window.location.href.startsWith("http") ? window.location.href : "https://github.com";
+  // 部署后的线上地址；本地打开时 QR 也会指向这里方便别人扫
+  const DEPLOY_URL = "https://cedarar.github.io/farm/";
+  const url = window.location.href.startsWith("http") ? window.location.href : DEPLOY_URL;
   const qrSize = 140, qrX = (W - qrSize) / 2, qrY = 1200;
   // 白底
   ctx.fillStyle = "#fff";
