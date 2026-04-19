@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>农场规划器 · 24 题测人格 + 种植推荐</title>
+<meta name="description" content="24 题测你的农场人格（16 型），按农场等级给你专属种植方案和周末活动策略">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; background: #f5f5f0; color: #333; }
+  h1 { text-align: center; font-size: 22px; margin: 10px 0 16px; }
+  h2 { font-size: 17px; margin-top: 0; }
+  h3 { font-size: 15px; margin: 14px 0 6px; color: #4a7c59; }
+  .card { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  button { padding: 9px 16px; border: none; background: #4a7c59; color: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 6px; margin-bottom: 4px; }
+  button:hover { background: #3a6449; }
+  button.secondary { background: #eee; color: #555; }
+  button.small { padding: 6px 12px; font-size: 13px; }
+  input, select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; width: 100%; background: #fff; }
+  label { display: block; margin-bottom: 4px; font-size: 13px; color: #666; }
+  .field { margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+  .option { padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .option:hover { background: #f0f8f0; border-color: #4a7c59; }
+  .option.picked { background: #e0f0e0; border-color: #4a7c59; border-width: 2px; font-weight: 600; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .hidden { display: none; }
+  .tag { display: inline-block; padding: 5px 12px; background: #4a7c59; color: #fff; border-radius: 12px; font-size: 14px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; margin-left: 6px; }
+  .badge.exp { background: #fff3d0; color: #8a5a00; }
+  .badge.coin { background: #d0e8ff; color: #004a8a; }
+  .badge.hero { background: #ffd8d8; color: #8a0000; }
+  .badge.short { background: #e0f0e0; color: #2a5a00; }
+  .crop-card { border-left: 4px solid #4a7c59; padding: 10px 14px; margin: 8px 0; background: #fafaf5; border-radius: 0 6px 6px 0; }
+  .crop-card.alt { border-left-color: #bbb; }
+  .crop-card .main { font-weight: bold; font-size: 16px; }
+  .crop-card .stat { color: #666; font-size: 12px; margin-top: 4px; }
+  .nav { display: flex; gap: 8px; margin-bottom: 14px; }
+  .nav button { flex: 1; margin: 0; padding: 10px; }
+  .mode-btns { display: flex; gap: 6px; margin-bottom: 12px; }
+  .mode-btns button { flex: 1; margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #f0f0e8; font-weight: 600; }
+  .schedule-row { display: flex; padding: 8px; border-bottom: 1px dashed #ddd; font-size: 13px; }
+  .schedule-row .time { width: 110px; color: #4a7c59; font-weight: 600; }
+  .tip { background: #fff8e0; border-left: 3px solid #e0c060; padding: 8px 12px; font-size: 12px; color: #7a5a00; margin: 10px 0; border-radius: 4px; }
+  small { color: #888; font-size: 12px; }
+
+  /* ========== 规划输出的增强样式 ========== */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 14px; }
+  .mode-grid button { margin: 0; padding: 14px 10px; font-size: 14px; text-align: left; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; line-height: 1.3; }
+  .mode-grid button small { color: #eee; font-size: 11px; font-weight: normal; }
+  .mode-grid button.secondary small { color: #888; }
+
+  .lifestyle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .lifestyle-card { border: 2px solid #ddd; border-radius: 10px; padding: 10px; font-size: 13px; cursor: pointer; background: #fff; transition: all .15s; }
+  .lifestyle-card:hover { border-color: #4a7c59; background: #f0f8f0; }
+  .lifestyle-card.selected { border-color: #4a7c59; background: #e8f5e9; }
+  .lifestyle-card .lf-head { font-weight: bold; margin-bottom: 3px; }
+  .lifestyle-card .lf-slot { color: #888; font-size: 11px; }
+
+  .out-section { background: #fff; border-radius: 14px; border: 2px solid #333; box-shadow: 4px 4px 0 #333; padding: 16px; margin: 12px 0; }
+  .out-section h3 { font-size: 15px; font-weight: bold; color: #333; margin: 0 0 10px; padding-left: 10px; border-left: 4px solid #e53935; }
+  .out-section .sub { font-size: 12px; color: #888; margin-top: -6px; margin-bottom: 10px; }
+
+  .mix-bar { display: flex; height: 32px; border-radius: 8px; overflow: hidden; border: 2px solid #333; font-size: 12px; font-weight: bold; color: #fff; margin: 8px 0 12px; }
+  .mix-seg { display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+  .seg-a { background: #4a7c59; }
+  .seg-b { background: #e08a2f; }
+  .seg-c { background: #3a5aa3; }
+  .seg-d { background: #b84048; }
+
+  .crop-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; background: #fafaf0; border-radius: 8px; margin-bottom: 6px; font-size: 13px; border-left: 4px solid #4a7c59; }
+  .crop-row.alt { border-left-color: #999; }
+  .crop-row .emo { font-size: 24px; }
+  .crop-row .name { font-weight: bold; }
+  .crop-row .pct { font-weight: bold; color: #e53935; }
+  .crop-row .stats { color: #666; font-size: 11px; margin-top: 2px; }
+
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .kpi { background: #fff3d0; border: 2px solid #333; border-radius: 10px; padding: 8px; text-align: center; }
+  .kpi .k { font-size: 11px; color: #666; margin-bottom: 2px; }
+  .kpi .v { font-size: 18px; font-weight: bold; color: #c04040; }
+
+  .milestone { background: #fff8e0; border-left: 4px solid #e0a040; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 13px; margin: 8px 0; }
+  .milestone b { color: #c05800; }
+  .milestone .star { color: #e0a040; }
+
+  .timeline-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed #ddd; font-size: 13px; align-items: baseline; }
+  .timeline-row:last-child { border-bottom: none; }
+  .timeline-row .t { background: #333; color: #ffe066; padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: bold; min-width: 110px; text-align: center; }
+
+  .stage-pill { display: inline-block; background: #4a7c59; color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px; }
+
+  .score-bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin: 3px 0 8px; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, #a8d5b1, #e08a2f, #c04040); }
+
+  .strategy-card { border: 2px solid #333; border-radius: 14px; background: #fff; padding: 14px; margin-bottom: 12px; box-shadow: 4px 4px 0 #333; }
+  .strategy-card.best { border-color: #c04040; background: #fff5f0; }
+  .strategy-card .sc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .strategy-card .sc-emoji { font-size: 30px; }
+  .strategy-card .sc-title { font-weight: bold; font-size: 16px; }
+  .strategy-card .sc-score { margin-left: auto; font-size: 12px; color: #666; }
+  .strategy-card .sc-score b { color: #c04040; font-size: 16px; }
+  .strategy-card .sc-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 8px 0; }
+  .strategy-card .sc-meta div { background: #fff8d0; border: 1px solid #ccc; border-radius: 6px; padding: 5px; text-align: center; font-size: 11px; }
+  .strategy-card .sc-meta b { display: block; font-size: 14px; color: #c04040; }
+  .badge-best { background: #c04040; color: #fff; padding: 3px 8px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<h1>农场规划器</h1>
+
+<div class="nav">
+  <button id="nav-test">人格测试</button>
+  <button id="nav-planner" class="secondary">日常规划</button>
+  <button id="nav-weekend" class="secondary">周末活动</button>
+</div>
+
+<!-- ========== 日常规划器 ========== -->
+<div id="view-planner" class="card hidden">
+  <h2>日常种植规划</h2>
+
+  <div class="row">
+    <div class="field">
+      <label>农场等级</label>
+      <input type="number" id="in-farm" min="1" max="53" value="20">
+    </div>
+    <div class="field">
+      <label>小摊等级</label>
+      <input type="number" id="in-shop" min="1" max="20" value="5">
+    </div>
+    <div class="field">
+      <label>土地数量</label>
+      <input type="number" id="in-land" min="1" max="24" value="6">
+    </div>
+  </div>
+
+  <label>我现在最想要——</label>
+  <div class="mode-grid">
+    <button data-mode="levelup" class="mode-btn">🚀 冲等级<small>综合分最大化，快升解锁新作物</small></button>
+    <button data-mode="newland" class="mode-btn secondary">💰 攒金币开新地<small>纯经济作物，省下金币升土地</small></button>
+    <button data-mode="mutation" class="mode-btn secondary">🎰 追变异作物<small>偏重变异上限高的品种</small></button>
+    <button data-mode="lifestyle" class="mode-btn secondary">😌 按我的作息推荐<small>对号入座 6 种上线习惯</small></button>
+  </div>
+
+  <div id="lifestyle-picker" class="hidden" style="margin-bottom: 12px;">
+    <label>选一个你最接近的作息</label>
+    <div id="lifestyle-options" class="lifestyle-grid"></div>
+  </div>
+
+  <button id="btn-plan">生成方案</button>
+
+  <div id="plan-out" class="hidden" style="margin-top: 14px;"></div>
+</div>
+
+<!-- ========== 周末活动 ========== -->
+<div id="view-weekend" class="card hidden">
+  <h2>周末活动策略</h2>
+  <div class="tip">变异爆发期 32h 英雄作物收益 ×2。算法根据你的等级和土地数匹配最优策略。</div>
+
+  <div class="row">
+    <div class="field">
+      <label>农场等级</label>
+      <input type="number" id="in-farm-w" min="1" max="53" value="25">
+    </div>
+    <div class="field">
+      <label>土地数量</label>
+      <input type="number" id="in-land-w" min="1" max="24" value="6">
+    </div>
+  </div>
+
+  <button id="btn-weekend">匹配最优策略</button>
+
+  <div id="strategy-list" style="margin-top: 14px;"></div>
+</div>
+
+<!-- ========== 人格测试 ========== -->
+<div id="view-test" class="card">
+  <div id="test-intro">
+    <h2>你是哪种农民？</h2>
+    <p id="intro-count"></p>
+    <p style="font-size: 13px; color: #666;">从 4 个维度测出你在 16 种农场人格中属于哪一型：</p>
+    <ul style="font-size: 13px; color: #555; margin-top: 6px; padding-left: 20px;">
+      <li><b>肝度 G</b> / 佛度 F —— 时间投入程度</li>
+      <li><b>社交 S</b> / 独行 L —— 是否热衷互动</li>
+      <li><b>策略 T</b> / 直觉 I —— 决策靠算账还是凭感觉</li>
+      <li><b>经济 M</b> / 经验 X —— 追求金币还是升级</li>
+    </ul>
+    <button id="btn-start" style="margin-top: 10px;">开始测试</button>
+  </div>
+  <div id="test-quiz" class="hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <small id="q-progress"></small>
+      <small id="q-hint" style="color: #aaa;">选项可反悔</small>
+    </div>
+    <div id="q-bar" style="height: 4px; background: #eee; border-radius: 2px; margin-bottom: 10px; overflow: hidden;">
+      <div id="q-bar-fill" style="height: 100%; background: #4a7c59; width: 0%; transition: width .2s;"></div>
+    </div>
+    <h2 id="q-text" style="margin-top: 8px;"></h2>
+    <div id="q-options"></div>
+    <div style="display: flex; gap: 8px; margin-top: 14px;">
+      <button id="btn-prev" class="secondary" style="flex: 1;">← 上一题</button>
+      <button id="btn-next" style="flex: 2;" disabled>下一题 →</button>
+    </div>
+  </div>
+  <div id="test-result" class="hidden">
+    <p style="text-align:center; margin: 20px 0;">
+      <span class="tag" id="r-tag"></span>
+      <br><small id="r-code" style="color: #4a7c59; letter-spacing: 4px; font-weight: bold; margin-top: 8px; display: inline-block;"></small>
+    </p>
+    <p id="r-desc" style="line-height: 1.7;"></p>
+    <div id="r-bars" style="margin: 14px 0;"></div>
+    <p><small id="r-stat"></small></p>
+
+    <h3 style="margin-top: 20px; margin-bottom: 10px; color: #4a7c59;">专属分享海报</h3>
+    <canvas id="poster-canvas" width="750" height="1360" style="width: 100%; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); display: block;"></canvas>
+    <div style="margin-top: 10px;">
+      <button id="btn-download" class="small">下载海报</button>
+      <small id="download-hint" style="display: block; margin-top: 6px;">手机端：长按海报也可保存图片</small>
+    </div>
+
+    <div style="margin-top: 18px;">
+      <button id="btn-to-planner" class="secondary">获取专属规划 →</button>
+      <button id="btn-retry" class="secondary">再测一次</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 作物主表（来源：小红书@农场小助） ==========
+// 字段：name 名称, unlock 解锁等级, hours 成熟小时, profit 净利润(单株), exp 总经验(单株), varCap 变异上限, qty 单块数量, cat 分类
+const CROPS = [
+  { name: "蘑菇",   unlock: 5,  hours: 0.33, profit: 129,   exp: 60,   varCap: 1, qty: 10, cat: "短时" },
+  { name: "土豆",   unlock: 6,  hours: 1,    profit: 425,   exp: 180,  varCap: 1, qty: 10, cat: "短时" },
+  { name: "玉米",   unlock: 8,  hours: 8,    profit: 3154,  exp: 1526, varCap: 1, qty: 10, cat: "凑单8h" },
+  { name: "草莓",   unlock: 10, hours: 16,   profit: 5403,  exp: 3139, varCap: 1, qty: 20, cat: "经验16h" },
+  { name: "向日葵", unlock: 12, hours: 1,    profit: 444,   exp: 202,  varCap: 2, qty: 20, cat: "短时" },
+  { name: "青椒",   unlock: 14, hours: 8,    profit: 3251,  exp: 1656, varCap: 2, qty: 25, cat: "凑单8h" },
+  { name: "大蒜",   unlock: 16, hours: 16,   profit: 5577,  exp: 3398, varCap: 2, qty: 30, cat: "经验16h" },
+  { name: "香蕉",   unlock: 18, hours: 16,   profit: 17508, exp: 1,    varCap: 2, qty: 40, cat: "经济16h" },
+  { name: "蓝莓",   unlock: 20, hours: 32,   profit: 8325,  exp: 7142, varCap: 3, qty: 20, cat: "英雄32h" },
+  { name: "黄瓜",   unlock: 22, hours: 1,    profit: 509,   exp: 229,  varCap: 2, qty: 25, cat: "短时" },
+  { name: "茄子",   unlock: 24, hours: 8,    profit: 3802,  exp: 1872, varCap: 2, qty: 15, cat: "凑单8h" },
+  { name: "南瓜",   unlock: 26, hours: 16,   profit: 6543,  exp: 3830, varCap: 2, qty: 10, cat: "经验16h" },
+  { name: "柚子",   unlock: 28, hours: 16,   profit: 20520, exp: 1,    varCap: 2, qty: 25, cat: "经济16h" },
+  { name: "卷心菜", unlock: 30, hours: 32,   profit: 9744,  exp: 8006, varCap: 3, qty: 20, cat: "英雄32h" },
+  { name: "白萝卜", unlock: 32, hours: 1,    profit: 622,   exp: 256,  varCap: 2, qty: 10, cat: "短时" },
+  { name: "葡萄",   unlock: 34, hours: 8,    profit: 4621,  exp: 2088, varCap: 2, qty: 30, cat: "凑单8h" },
+  { name: "生菜",   unlock: 36, hours: 16,   profit: 7970,  exp: 4262, varCap: 2, qty: 20, cat: "经验16h" },
+  { name: "西瓜",   unlock: 38, hours: 16,   profit: 25038, exp: 1,    varCap: 2, qty: 20, cat: "经济16h" },
+  { name: "辣椒",   unlock: 40, hours: 32,   profit: 11881, exp: 8870, varCap: 3, qty: 20, cat: "英雄32h" },
+  { name: "洋葱",   unlock: 42, hours: 1,    profit: 726,   exp: 283,  varCap: 3, qty: 30, cat: "短时" }
+];
+
+const CAT_BADGE = {
+  "短时":      "short",
+  "凑单8h":    "short",
+  "经验16h":   "exp",
+  "经济16h":   "coin",
+  "英雄32h":   "hero"
+};
+
+// ========== 辅助数据表 ==========
+// 等级对应的下一个解锁作物（里程碑）。攻略里关键节点：18/20/28/30/38/42
+const UNLOCK_MILESTONES = [
+  { lv: 5,  emoji: "🍄", name: "蘑菇",   note: "超短时 20 分钟，早期刷经验神器" },
+  { lv: 8,  emoji: "🌽", name: "玉米",   note: "解锁一键收获，肝度大幅降低" },
+  { lv: 12, emoji: "🌻", name: "向日葵", note: "一键种植 + 橙/青铜变异" },
+  { lv: 18, emoji: "🍌", name: "香蕉",   note: "★ 第一个收益/h 破千，财富分水岭" },
+  { lv: 20, emoji: "🫐", name: "蓝莓",   note: "★ 英雄变异入场券，周末活动起飞" },
+  { lv: 28, emoji: "🍊", name: "柚子",   note: "★ 收益/h 1283，主力印钞机" },
+  { lv: 30, emoji: "🥬", name: "卷心菜", note: "第二个英雄变异，双英雄轮种" },
+  { lv: 38, emoji: "🍉", name: "西瓜",   note: "★ 天花板 1565 收益/h" },
+  { lv: 42, emoji: "🧅", name: "洋葱",   note: "★ 短时终极形态，综合分之王" }
+];
+
+// 小摊 ROI 区段（来自攻略 P5）
+function shopRoiBand(level) {
+  if (level <= 3) return { tag: "秒升", color: "#2a7a3a", advice: "眼睛一闭就升，不升亏。", tier: 1 };
+  if (level <= 5) return { tag: "必升", color: "#5a9a3a", advice: "攒几茬西瓜就能升，必须升。", tier: 2 };
+  if (level <= 8) return { tag: "值升", color: "#c0a030", advice: "稳定回本，Lv8 是甜点位（+35%）。", tier: 3 };
+  if (level <= 13) return { tag: "缓升", color: "#c07030", advice: "等开新地+高等级作物再升。", tier: 4 };
+  return { tag: "冷藏", color: "#c04040", advice: "同样的钱开新土地 ROI 高几倍。", tier: 5 };
+}
+
+// ========== 小摊售价加成（小摊等级 N → 加成 (N-1)*5%） ==========
+function shopBoost(level) { return 1 + (level - 1) * 0.05; }
+
+// 综合分（来自攻略 P3）：收益/h + 经验/h × 3
+// 经验加权 3 倍，因为升级后解锁更高收益作物有复利效应
+function combinedScore(crop, boost) {
+  const coinPerH = (crop.profit * boost) / crop.hours;
+  const expPerH = crop.exp / crop.hours;
+  return { coinPerH, expPerH, score: coinPerH + expPerH * 3 };
+}
+
+// ========== 6 种作息模板 ==========
+const LIFESTYLES = [
+  { id: "commuter", emoji: "🧑‍💻", name: "通勤社畜", slot: "7点/12点/19点/23点", crops: ["西瓜", "葡萄"], preferHours: [16, 8], minLv: 18 },
+  { id: "student",  emoji: "🎓", name: "卷王学生",  slot: "课间 + 晚自习长窗",    crops: ["西瓜", "洋葱"], preferHours: [16, 1], minLv: 18 },
+  { id: "night",    emoji: "🌙", name: "夜猫作息",  slot: "21点-凌晨3点",         crops: ["西瓜", "柚子"], preferHours: [16],    minLv: 28 },
+  { id: "mom",      emoji: "🍼", name: "碎片宝妈",  slot: "每天 6-8 次，每次 3 分钟", crops: ["洋葱", "白萝卜"], preferHours: [1], minLv: 32 },
+  { id: "weekend",  emoji: "🎰", name: "周末战士",  slot: "工作日躺平 + 周末爆肝",    crops: ["香蕉", "辣椒"], preferHours: [16, 32], minLv: 18 },
+  { id: "zen",      emoji: "🛌", name: "佛系挂机",  slot: "早 8 点 + 晚 8 点",       crops: ["西瓜", "香蕉"], preferHours: [16],    minLv: 18 }
+];
+
+// ========== 规划器核心算法（4 种模式） ==========
+// mode: levelup / newland / mutation / lifestyle
+function plan(farmLv, shopLv, landCount, mode, lifestyleId) {
+  const available = CROPS.filter(c => c.unlock <= farmLv);
+  if (!available.length) return null;
+
+  const boost = shopBoost(shopLv);
+
+  // 根据模式计算每种作物的得分
+  const scored = available.map(c => {
+    const { coinPerH, expPerH, score: combo } = combinedScore(c, boost);
+    let score;
+    switch (mode) {
+      case "levelup":
+        // 综合分（攻略核心公式）
+        score = combo;
+        break;
+      case "newland":
+        // 纯金币（攒钱开新地）
+        score = coinPerH;
+        break;
+      case "mutation":
+        // 变异偏好：变异上限 3 加 50% 权重，2 加 20%，1 不加
+        const mutBoost = c.varCap >= 3 ? 1.5 : c.varCap >= 2 ? 1.2 : 1.0;
+        score = combo * mutBoost;
+        break;
+      case "lifestyle":
+        // 作息模式：只给匹配时长的作物高分，其余压低
+        const ls = LIFESTYLES.find(l => l.id === lifestyleId);
+        if (!ls) return null;
+        const hoursMatch = ls.preferHours.includes(c.hours) ||
+                          (c.hours <= 1 && ls.preferHours.includes(1)) ||
+                          (c.hours >= 8 && c.hours <= 16 && ls.preferHours.some(h => h >= 8));
+        const nameMatch = ls.crops.includes(c.name);
+        score = combo * (nameMatch ? 1.8 : hoursMatch ? 1.1 : 0.3);
+        break;
+      default:
+        score = combo;
+    }
+    return { ...c, coinPerH, expPerH, combo, score };
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
+
+  if (!scored.length) return null;
+
+  // 组合优化：主力 + 副作物搭配分配地块
+  // 主力占 60-80%，副作物占 20-40%
+  const main = scored[0];
+  let alt = scored.find(c => c.name !== main.name && c.hours !== main.hours);
+  if (!alt) alt = scored[1] || main;
+
+  // 根据作物成熟时长组合决定分配比例
+  const mainPct = main.hours <= 1 ? 70 : main.hours <= 8 ? 60 : 70;
+  const altPct = 100 - mainPct;
+  const mainPlots = Math.round(landCount * mainPct / 100);
+  const altPlots = landCount - mainPlots;
+
+  // 24h 预期（考虑每种作物能成熟几轮）
+  const roundsMain = 24 / main.hours;
+  const roundsAlt = 24 / alt.hours;
+  const totalCoin = main.coinPerH * 24 * mainPlots + alt.coinPerH * 24 * altPlots;
+  const totalExp = main.expPerH * 24 * mainPlots + alt.expPerH * 24 * altPlots;
+
+  // 里程碑：下一个解锁
+  const nextUnlock = UNLOCK_MILESTONES.find(m => m.lv > farmLv);
+
+  return {
+    main, alt, mainPct, altPct, mainPlots, altPlots,
+    totalCoin, totalExp, roundsMain, roundsAlt,
+    landCount, farmLv, shopLv,
+    shopBand: shopRoiBand(shopLv),
+    nextUnlock
+  };
+}
+
+const CROP_EMOJI = {
+  蘑菇: "🍄", 土豆: "🥔", 玉米: "🌽", 草莓: "🍓", 向日葵: "🌻",
+  青椒: "🫑", 大蒜: "🧄", 香蕉: "🍌", 蓝莓: "🫐", 黄瓜: "🥒",
+  茄子: "🍆", 南瓜: "🎃", 柚子: "🍊", 卷心菜: "🥬", 白萝卜: "🥬",
+  葡萄: "🍇", 生菜: "🥗", 西瓜: "🍉", 辣椒: "🌶️", 洋葱: "🧅"
+};
+const em = n => CROP_EMOJI[n] || "🌱";
+
+function gameStageBadge(farmLv) {
+  if (farmLv < 18) return { label: "起步期 Lv1-17", tip: "短时刷经验为主" };
+  if (farmLv < 28) return { label: "财富分水岭 Lv18-27", tip: "香蕉挂机攒钱" };
+  if (farmLv < 38) return { label: "主力期 Lv28-37", tip: "柚子印钞机 + 英雄变异" };
+  return { label: "终章 Lv38+", tip: "西瓜无脑 + 洋葱短时" };
+}
+
+function renderPlan() {
+  const farm = parseInt(document.getElementById("in-farm").value) || 1;
+  const shop = parseInt(document.getElementById("in-shop").value) || 1;
+  const land = parseInt(document.getElementById("in-land").value) || 1;
+  const mode = document.querySelector(".mode-btn:not(.secondary)")?.dataset.mode || "levelup";
+  const lifestyleId = document.querySelector(".lifestyle-card.selected")?.dataset.id;
+
+  const r = plan(farm, shop, land, mode, lifestyleId);
+  const out = document.getElementById("plan-out");
+  if (!r) {
+    out.innerHTML = `<div class="tip">当前条件下没有合适方案，请检查输入或选择作息。</div>`;
+    out.classList.remove("hidden");
+    return;
+  }
+
+  const fmt = n => n >= 10000 ? (n / 10000).toFixed(2) + "万" : Math.round(n).toString();
+  const stage = gameStageBadge(farm);
+
+  const modeLabel = {
+    levelup: "🚀 冲等级",
+    newland: "💰 攒金币开新地",
+    mutation: "🎰 追变异作物",
+    lifestyle: "😌 按作息推荐"
+  }[mode];
+
+  out.innerHTML = `
+    <div class="out-section">
+      <h3>推荐组合 · ${modeLabel}</h3>
+      <div class="sub">
+        <span class="stage-pill">${stage.label}</span>${stage.tip}
+      </div>
+      <div class="mix-bar">
+        <div class="mix-seg seg-a" style="flex: ${r.mainPct};">${em(r.main.name)} ${r.main.name} ${r.mainPct}%</div>
+        <div class="mix-seg seg-b" style="flex: ${r.altPct};">${em(r.alt.name)} ${r.alt.name} ${r.altPct}%</div>
+      </div>
+
+      <div class="crop-row">
+        <span class="emo">${em(r.main.name)}</span>
+        <div>
+          <div><b>${r.main.name}</b> <span class="badge ${CAT_BADGE[r.main.cat]}">${r.main.cat}</span></div>
+          <div class="stats">${r.main.hours}h 成熟 · ${r.main.coinPerH.toFixed(0)} 币/h · ${r.main.expPerH.toFixed(0)} 经验/h · 综合分 <b>${Math.round(r.main.combo)}</b></div>
+        </div>
+        <span class="pct">${r.mainPlots} 块</span>
+      </div>
+      <div class="crop-row alt">
+        <span class="emo">${em(r.alt.name)}</span>
+        <div>
+          <div><b>${r.alt.name}</b> <span class="badge ${CAT_BADGE[r.alt.cat]}">${r.alt.cat}</span></div>
+          <div class="stats">${r.alt.hours}h 成熟 · ${r.alt.coinPerH.toFixed(0)} 币/h · ${r.alt.expPerH.toFixed(0)} 经验/h · 综合分 <b>${Math.round(r.alt.combo)}</b></div>
+        </div>
+        <span class="pct">${r.altPlots} 块</span>
+      </div>
+    </div>
+
+    <div class="out-section">
+      <h3>24 小时预期产出</h3>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="k">总金币</div><div class="v">${fmt(r.totalCoin)}</div></div>
+        <div class="kpi"><div class="k">总经验</div><div class="v">${fmt(r.totalExp)}</div></div>
+        <div class="kpi"><div class="k">主力收菜</div><div class="v">${r.roundsMain.toFixed(1)} 轮</div></div>
+      </div>
+      <small>已含小摊 Lv${r.shopLv} 加成（+${((shopBoost(r.shopLv) - 1) * 100).toFixed(0)}%），未计变异收益。</small>
+    </div>
+
+    ${r.nextUnlock ? `
+    <div class="milestone">
+      <span class="star">★</span>
+      <b>距离下一个里程碑：Lv${r.nextUnlock.lv} 解锁 ${r.nextUnlock.emoji} ${r.nextUnlock.name}</b>
+      — ${r.nextUnlock.note}
+    </div>` : ""}
+
+    <div class="milestone" style="border-color: ${r.shopBand.color};">
+      <b style="color: ${r.shopBand.color};">小摊 Lv${r.shopLv} · ${r.shopBand.tag}</b>
+      — ${r.shopBand.advice}
+    </div>
+  `;
+  out.classList.remove("hidden");
+}
+
+// ========== 周末活动策略 · 20 套方案（按等级段铺开） ==========
+// 分层：入门 Lv18-25 / 中期 Lv26-37 / 后期 Lv38-41 / 终章 Lv42+
+const WEEKEND_PLANS = [
+  // ===== 入门段（Lv 18-25）=====
+  {
+    id: "rookie_idle",
+    name: "纯挂机新手流",
+    emoji: "🥚",
+    tag: "零肝度",
+    desc: "全地香蕉，周末 3 茬 16h，一天收一次就够。最简单的变现路线。",
+    minLv: 18, minPlots: 3, idealPlots: 5,
+    mix: [{ crop: "香蕉", pct: 100, color: "seg-b", note: "16h 纯经济" }],
+    meta: ["难度 佛系", "收菜 每16h", "风险 极低"],
+    schedule: [
+      ["周五 19:00", "全地香蕉下种"],
+      ["周六 11:00", "第 1 茬收 + 补种"],
+      ["周日 03:00", "第 2 茬收 + 补种"],
+      ["周日 19:00", "最终收割 ✅"]
+    ]
+  },
+  {
+    id: "rookie_dual",
+    name: "初级双轨流",
+    emoji: "🌱",
+    tag: "变异入门",
+    desc: "Lv20 解锁蓝莓即可用。50% 蓝莓赌英雄变异，50% 香蕉稳出金。",
+    minLv: 20, minPlots: 4, idealPlots: 6,
+    mix: [
+      { crop: "蓝莓", pct: 50, color: "seg-d", note: "32h 英雄变异" },
+      { crop: "香蕉", pct: 50, color: "seg-b", note: "16h 经济保底" }
+    ],
+    meta: ["难度 中度", "核心 2条线", "收益 双修"],
+    schedule: [
+      ["周四 18:00", "50% 地蓝莓下种"],
+      ["周五 18:00", "另 50% 地香蕉下种"],
+      ["周五 22:00", "蓝莓浇水 + 求好友祝福"],
+      ["周六 10:00", "香蕉第 1 茬收 + 补种"],
+      ["周日 02:00", "蓝莓收割（变异爆发）+ 补种"],
+      ["周日 18:00", "香蕉最后收 ✅"]
+    ]
+  },
+  {
+    id: "rookie_blue",
+    name: "蓝莓独秀流",
+    emoji: "🫐",
+    tag: "赌徒入门",
+    desc: "全地蓝莓，赌英雄变异。一周最多种 2 茬，纯收英雄变异爆发。",
+    minLv: 20, minPlots: 4, idealPlots: 6,
+    mix: [{ crop: "蓝莓", pct: 100, color: "seg-d", note: "32h 英雄变异" }],
+    meta: ["难度 肝帝", "收菜 每32h", "风险 中高"],
+    schedule: [
+      ["周四 18:00", "全地蓝莓下种"],
+      ["周四 22:00", "浇水 2 + 求好友祝福"],
+      ["周五 09:00", "浇水 3 + 再求祝福"],
+      ["周六 02:00", "全地收割（变异期爆发）+ 补种"],
+      ["周日 10:00", "最终收割 ✅"]
+    ]
+  },
+  {
+    id: "student",
+    name: "学生课间流",
+    emoji: "🎒",
+    tag: "碎片时间",
+    desc: "晚自习 16h 香蕉挂睡眠，白天课间 40% 地块刷 1h 黄瓜。",
+    minLv: 22, minPlots: 4, idealPlots: 6,
+    mix: [
+      { crop: "香蕉", pct: 60, color: "seg-b", note: "晚挂 16h" },
+      { crop: "黄瓜", pct: 40, color: "seg-a", note: "课间 1h" }
+    ],
+    meta: ["难度 中度", "收菜 16h+1h", "适合 上学党"],
+    schedule: [
+      ["周五 21:00", "60% 地香蕉挂睡眠"],
+      ["周六 白天", "40% 地黄瓜每小时收+补（5-8 轮）"],
+      ["周六 13:00", "香蕉第 1 茬收 + 补种"],
+      ["周日 白天", "黄瓜继续连刷"],
+      ["周日 21:00", "全品类终收 ✅"]
+    ]
+  },
+
+  // ===== 中期（Lv 26-37）=====
+  {
+    id: "mid_pomelo",
+    name: "柚子印钞流",
+    emoji: "🍊",
+    tag: "纯经济",
+    desc: "全地柚子，每 16h 一收。收益/h 1283，仅次西瓜，是 Lv28-37 的主力印钞机。",
+    minLv: 28, minPlots: 5, idealPlots: 8,
+    mix: [{ crop: "柚子", pct: 100, color: "seg-b", note: "16h 印钞" }],
+    meta: ["难度 佛系", "收菜 每16h", "收益 纯金币"],
+    schedule: [
+      ["周五 20:00", "全地柚子下种"],
+      ["周六 12:00", "第 1 茬收 + 补种"],
+      ["周日 04:00", "第 2 茬收 + 补种"],
+      ["周日 20:00", "最终收 ✅"]
+    ]
+  },
+  {
+    id: "mid_dual_hero",
+    name: "双英雄对冲流",
+    emoji: "🛡️",
+    tag: "错峰变异",
+    desc: "蓝莓 + 卷心菜错峰 12 小时，两条 32h 时间线，变异收益拉满。",
+    minLv: 30, minPlots: 6, idealPlots: 10,
+    mix: [
+      { crop: "蓝莓", pct: 50, color: "seg-d", note: "32h 英雄" },
+      { crop: "卷心菜", pct: 50, color: "seg-d", note: "32h 英雄" }
+    ],
+    meta: ["难度 肝帝", "核心 双英雄", "收益 经验爆"],
+    schedule: [
+      ["周四 18:00", "50% 蓝莓下种"],
+      ["周五 06:00", "50% 卷心菜下种（错峰 12h）"],
+      ["周五/六", "分别卡点浇水 + 求祝福"],
+      ["周六 02:00", "蓝莓第 1 轮收 + 补种"],
+      ["周六 14:00", "卷心菜第 1 轮收 + 补 8h 凑尾"],
+      ["周日 20:00", "全终收 ✅"]
+    ]
+  },
+  {
+    id: "mid_pumpkin",
+    name: "南瓜经验流",
+    emoji: "🎯",
+    tag: "冲等级",
+    desc: "70% 南瓜疯狂刷经验，30% 柚子补金币。Lv26 解锁后的性价比新贵。",
+    minLv: 26, minPlots: 5, idealPlots: 8,
+    mix: [
+      { crop: "南瓜", pct: 70, color: "seg-a", note: "16h 高经验" },
+      { crop: "柚子", pct: 30, color: "seg-b", note: "16h 补金币" }
+    ],
+    meta: ["难度 中度", "收益 经验主", "适合 冲等级"],
+    schedule: [
+      ["周五 19:00", "70% 南瓜 + 30% 柚子同下"],
+      ["周六 11:00", "双收双补"],
+      ["周日 03:00", "再轮一次"],
+      ["周日 19:00", "最终收割 ✅"]
+    ]
+  },
+  {
+    id: "mid_triple",
+    name: "三杂平衡流",
+    emoji: "⚖️",
+    tag: "经济经验",
+    desc: "40% 卷心菜（经验）+ 40% 柚子（金币）+ 20% 葡萄（凑单）。金经双修。",
+    minLv: 30, minPlots: 6, idealPlots: 9,
+    mix: [
+      { crop: "卷心菜", pct: 40, color: "seg-d", note: "32h 英雄" },
+      { crop: "柚子", pct: 40, color: "seg-b", note: "16h 金币" },
+      { crop: "葡萄", pct: 20, color: "seg-c", note: "8h 凑单" }
+    ],
+    meta: ["难度 中度", "核心 3条线", "收益 双修"],
+    schedule: [
+      ["周五 18:00", "40% 卷心菜 + 40% 柚子同下"],
+      ["周五 22:00", "卷心菜浇水 2"],
+      ["周六 02:00", "20% 葡萄开种（8h 循环）"],
+      ["周六 10:00", "柚子第 1 轮收 + 葡萄收补"],
+      ["周日 02:00", "卷心菜收 + 柚子再轮"],
+      ["周日 20:00", "全终收 ✅"]
+    ]
+  },
+  {
+    id: "mid_nightowl",
+    name: "夜猫专享流",
+    emoji: "🌙",
+    tag: "凌晨收菜",
+    desc: "凌晨下种凌晨收，完美匹配熬夜作息。全地柚子，每 16h 一轮。",
+    minLv: 28, minPlots: 5, idealPlots: 7,
+    mix: [{ crop: "柚子", pct: 100, color: "seg-b", note: "16h 纯金币" }],
+    meta: ["难度 夜肝", "收菜 凌晨", "适合 夜猫"],
+    schedule: [
+      ["周五 01:00", "全地柚子下种"],
+      ["周五 17:00", "第 1 茬收 + 补"],
+      ["周六 09:00", "第 2 茬收 + 补"],
+      ["周日 01:00", "第 3 茬收 + 补"],
+      ["周日 17:00", "最终收 ✅"]
+    ]
+  },
+  {
+    id: "mid_radish",
+    name: "白萝卜狂轰流",
+    emoji: "🌞",
+    tag: "短时爆肝",
+    desc: "全地白萝卜每小时一收，疯狂刷经验和金币。适合周末在家不动的高频玩家。",
+    minLv: 32, minPlots: 5, idealPlots: 8,
+    mix: [{ crop: "白萝卜", pct: 100, color: "seg-a", note: "1h 短时" }],
+    meta: ["难度 爆肝", "收菜 每1h", "在线 高频"],
+    schedule: [
+      ["周五 18:00", "全地白萝卜下种"],
+      ["周五 19-23:00", "每小时收+补（5 轮）"],
+      ["周六 08-23:00", "15 小时连刷"],
+      ["周日 08-22:00", "再 14 轮 ✅"]
+    ]
+  },
+  {
+    id: "mid_four",
+    name: "中级四轨交响",
+    emoji: "🎪",
+    tag: "全时段覆盖",
+    desc: "32h / 16h / 8h / 1h 四条时间线并行，几乎每个时段都有事做。",
+    minLv: 34, minPlots: 8, idealPlots: 12,
+    mix: [
+      { crop: "卷心菜", pct: 30, color: "seg-d", note: "32h 英雄" },
+      { crop: "柚子", pct: 30, color: "seg-b", note: "16h 金币" },
+      { crop: "葡萄", pct: 20, color: "seg-c", note: "8h 凑单" },
+      { crop: "白萝卜", pct: 20, color: "seg-a", note: "1h 短时" }
+    ],
+    meta: ["难度 重肝", "核心 4条线", "收益 全能"],
+    schedule: [
+      ["周五 18:00", "卷心菜 + 柚子同下"],
+      ["周五 22:00", "卷心菜浇水 + 葡萄开种"],
+      ["周六 白天", "白萝卜连刷 10+ 轮"],
+      ["周六 10:00", "柚子第 1 轮 / 葡萄轮收"],
+      ["周日 02:00", "卷心菜收 + 葡萄换茬"],
+      ["周日 20:00", "全品类终收 ✅"]
+    ]
+  },
+
+  // ===== 后期（Lv 38-41）=====
+  {
+    id: "late_dual",
+    name: "左右开弓流",
+    emoji: "🏟️",
+    tag: "地块分仓",
+    desc: "60% 金币仓专种西瓜，40% 经验仓专种辣椒，两仓互不干扰。",
+    minLv: 38, minPlots: 6, idealPlots: 12,
+    mix: [
+      { crop: "西瓜", pct: 60, color: "seg-b", note: "16h × 3 茬" },
+      { crop: "辣椒", pct: 40, color: "seg-d", note: "32h × 1.5 茬" }
+    ],
+    meta: ["难度 中度", "核心 分仓", "适合 地多"],
+    schedule: [
+      ["周五 20:00", "金币仓西瓜 + 经验仓辣椒"],
+      ["周六 12:00", "金币仓第 1 茬收 + 补"],
+      ["周日 04:00", "经验仓辣椒收 + 补短时凑尾"],
+      ["周日 04:00", "金币仓第 2 茬收 + 补"],
+      ["周日 20:00", "全品类终收 ✅"]
+    ]
+  },
+  {
+    id: "late_melon",
+    name: "西瓜垄断流",
+    emoji: "💎",
+    tag: "极简无脑",
+    desc: "全地西瓜，每 16h 一收。收益/h 1565，全服天花板。不用动脑。",
+    minLv: 38, minPlots: 4, idealPlots: 6,
+    mix: [{ crop: "西瓜", pct: 100, color: "seg-b", note: "16h 顶级" }],
+    meta: ["难度 佛系", "收菜 每16h", "收益 天花板"],
+    schedule: [
+      ["周五 20:00", "全地西瓜下种"],
+      ["周六 12:00", "第 1 茬收 + 补"],
+      ["周日 04:00", "第 2 茬收 + 补"],
+      ["周日 20:00", "终收 ✅"]
+    ]
+  },
+  {
+    id: "late_short",
+    name: "极限刷经验流",
+    emoji: "⚡",
+    tag: "不碰长时",
+    desc: "70% 地块连刷 1h 短时作物，30% 夜间挂 8h 凑单。周末宅家首选。",
+    minLv: 32, minPlots: 4, idealPlots: 8,
+    mix: [
+      { crop: "洋葱", pct: 40, color: "seg-a", note: "1h 短时" },
+      { crop: "白萝卜", pct: 30, color: "seg-a", note: "1h 备用" },
+      { crop: "葡萄", pct: 30, color: "seg-c", note: "夜间 8h" }
+    ],
+    meta: ["日间 每 1h", "夜间 8h 挂", "周末 宅家"],
+    schedule: [
+      ["周五 18-23:00", "连刷 5 轮短时（变异期爆）"],
+      ["周五 23:00", "全地换 8h 葡萄睡觉"],
+      ["周六 白天", "12 小时连刷 1h"],
+      ["周六 23:00", "夜间 8h 茄子凑单"],
+      ["周日 白天", "重复到 20:00 ✅"]
+    ]
+  },
+  {
+    id: "late_double_hero",
+    name: "双英雄合击流",
+    emoji: "🔥",
+    tag: "32h 双英雄",
+    desc: "辣椒 + 卷心菜两款英雄变异 50/50 分仓。变异期 ×2 加成同步爆发。",
+    minLv: 40, minPlots: 6, idealPlots: 9,
+    mix: [
+      { crop: "辣椒", pct: 50, color: "seg-d", note: "32h 顶级英雄" },
+      { crop: "卷心菜", pct: 50, color: "seg-d", note: "32h 英雄" }
+    ],
+    meta: ["难度 肝帝", "核心 双英雄", "收益 经验爆"],
+    schedule: [
+      ["周四 18:00", "50% 辣椒下种"],
+      ["周五 06:00", "50% 卷心菜下种（错峰 12h）"],
+      ["周五/六", "分别浇水 + 求祝福"],
+      ["周六 02:00", "辣椒收 + 补"],
+      ["周六 14:00", "卷心菜收 + 补 8h 凑尾"],
+      ["周日 22:00", "全终收 ✅"]
+    ]
+  },
+  {
+    id: "late_dual_econ",
+    name: "双经济加速流",
+    emoji: "💠",
+    tag: "双印钞",
+    desc: "60% 西瓜 + 40% 柚子，两款顶级经济作物同步运转。变现速度拉满。",
+    minLv: 38, minPlots: 8, idealPlots: 12,
+    mix: [
+      { crop: "西瓜", pct: 60, color: "seg-b", note: "16h 顶级" },
+      { crop: "柚子", pct: 40, color: "seg-b", note: "16h 次级" }
+    ],
+    meta: ["难度 中度", "核心 双印钞", "收益 金币满"],
+    schedule: [
+      ["周五 20:00", "60% 西瓜 + 40% 柚子同下"],
+      ["周六 12:00", "双收双补"],
+      ["周日 04:00", "再轮一次"],
+      ["周日 20:00", "最终收 ✅"]
+    ]
+  },
+
+  // ===== 终章（Lv 42+）=====
+  {
+    id: "endgame_tri",
+    name: "三轨错峰流",
+    emoji: "🛤️",
+    tag: "经典混搭",
+    desc: "32h/16h/8h 三条时间线，每 8h 都有东西可收。变异期辣椒 ×2 爆发。",
+    minLv: 40, minPlots: 5, idealPlots: 10,
+    mix: [
+      { crop: "辣椒", pct: 40, color: "seg-d", note: "32h 英雄" },
+      { crop: "西瓜", pct: 40, color: "seg-b", note: "16h 金币" },
+      { crop: "葡萄", pct: 20, color: "seg-c", note: "8h 凑单" }
+    ],
+    meta: ["难度 中度", "核心 3条线", "收益 全能"],
+    schedule: [
+      ["周五 20:00", "40% 辣椒 + 40% 西瓜同下"],
+      ["周六 04:00", "20% 葡萄开种"],
+      ["周六 12:00", "葡萄第 1 轮 + 补"],
+      ["周日 04:00", "辣椒大波收（变异爆发）"],
+      ["周日 20:00", "西瓜 + 葡萄凑尾 ✅"]
+    ]
+  },
+  {
+    id: "endgame_allstar",
+    name: "全明星三仓流",
+    emoji: "👑",
+    tag: "三顶级作物",
+    desc: "辣椒（英雄）+ 西瓜（金币）+ 洋葱（短时）三仓分工，每个时段都在产出。",
+    minLv: 42, minPlots: 10, idealPlots: 15,
+    mix: [
+      { crop: "辣椒", pct: 35, color: "seg-d", note: "32h 英雄" },
+      { crop: "西瓜", pct: 35, color: "seg-b", note: "16h 金币" },
+      { crop: "洋葱", pct: 30, color: "seg-a", note: "1h 短时" }
+    ],
+    meta: ["难度 神仙肝", "核心 3顶级", "收益 无敌"],
+    schedule: [
+      ["周四 18:00", "35% 辣椒下种"],
+      ["周五 20:00", "35% 西瓜 + 30% 洋葱"],
+      ["周五全天", "洋葱连刷"],
+      ["周日 02:00", "辣椒收 + 补"],
+      ["周日 22:00", "全品类终收 ✅"]
+    ]
+  },
+  {
+    id: "endgame_onion",
+    name: "洋葱海啸流",
+    emoji: "🌋",
+    tag: "短时之王",
+    desc: "全地洋葱 1h 循环。收益/h 726 + 经验/h 283，综合分全服第一。爆肝之选。",
+    minLv: 42, minPlots: 8, idealPlots: 12,
+    mix: [{ crop: "洋葱", pct: 100, color: "seg-a", note: "1h 综合分第 1" }],
+    meta: ["难度 神仙肝", "收菜 每1h", "在线 全天"],
+    schedule: [
+      ["周五 18:00", "全地洋葱下种"],
+      ["周五晚", "连刷 5-6 轮"],
+      ["周六 07-23:00", "16 小时连刷"],
+      ["周日 07-22:00", "再刷 15 轮 ✅"]
+    ]
+  },
+  {
+    id: "endgame_circus",
+    name: "全品类马戏团",
+    emoji: "🎪",
+    tag: "5作物混种",
+    desc: "5 条独立时间线并行。辣椒 + 西瓜 + 生菜 + 葡萄 + 洋葱，调度高手专属。",
+    minLv: 42, minPlots: 12, idealPlots: 18,
+    mix: [
+      { crop: "辣椒", pct: 25, color: "seg-d", note: "32h 英雄" },
+      { crop: "西瓜", pct: 25, color: "seg-b", note: "16h 金币" },
+      { crop: "生菜", pct: 20, color: "seg-a", note: "16h 经验" },
+      { crop: "葡萄", pct: 15, color: "seg-c", note: "8h 凑单" },
+      { crop: "洋葱", pct: 15, color: "seg-a", note: "1h 短时" }
+    ],
+    meta: ["难度 封神", "核心 5作物", "收益 极致"],
+    schedule: [
+      ["周四 18:00", "25% 辣椒下种"],
+      ["周五 18:00", "25% 西瓜 + 20% 生菜"],
+      ["周五 22:00", "15% 葡萄 + 15% 洋葱"],
+      ["周六-周日", "各自独立节奏运转"],
+      ["周日 20:00", "全品类收官 ✅"]
+    ]
+  }
+];
+
+function scoreWeekendPlan(plan, farmLv, plotCount) {
+  if (farmLv < plan.minLv) return { score: 0, locked: true, reason: `需 Lv${plan.minLv}+ 解锁相关作物` };
+  if (plotCount < plan.minPlots) return { score: 0, locked: true, reason: `至少 ${plan.minPlots} 块地` };
+
+  // 评分 0-100
+  // 等级契合：超过 minLv 10 级以上满分
+  const lvBonus = Math.min(1, (farmLv - plan.minLv) / 10);
+  // 地块契合：接近 idealPlots 满分
+  const plotFit = Math.min(1, plotCount / plan.idealPlots);
+  const score = Math.round((lvBonus * 0.4 + plotFit * 0.6) * 100);
+  return { score: Math.max(score, 40), locked: false };
+}
+
+function renderWeekend() {
+  const farmLv = parseInt(document.getElementById("in-farm-w").value) || 1;
+  const plots = parseInt(document.getElementById("in-land-w").value) || 1;
+  const box = document.getElementById("strategy-list");
+
+  const evaluated = WEEKEND_PLANS.map(p => ({
+    ...p,
+    eval: scoreWeekendPlan(p, farmLv, plots)
+  }));
+
+  // 解锁的按匹配度排序，锁住的按 minLv 升序放到末尾
+  const unlocked = evaluated.filter(p => !p.eval.locked).sort((a, b) => b.eval.score - a.eval.score);
+  const locked = evaluated.filter(p => p.eval.locked).sort((a, b) => a.minLv - b.minLv);
+  const sorted = [...unlocked, ...locked];
+  const bestId = unlocked[0]?.id || null;
+
+  const summary = `
+    <div class="out-section" style="padding: 12px;">
+      <h3>匹配结果</h3>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="k">可用策略</div><div class="v">${unlocked.length}</div></div>
+        <div class="kpi"><div class="k">已锁定</div><div class="v" style="color: #888;">${locked.length}</div></div>
+        <div class="kpi"><div class="k">最高匹配</div><div class="v">${unlocked[0]?.eval.score || 0}</div></div>
+      </div>
+      <small>Lv ${farmLv} · ${plots} 块地 · 共 ${WEEKEND_PLANS.length} 套流派</small>
+    </div>
+  `;
+
+  const cards = sorted.map(p => {
+    const isLocked = p.eval.locked;
+    const isBest = p.id === bestId;
+    return `
+      <div class="strategy-card ${isBest ? "best" : ""}" style="${isLocked ? "opacity:.45;" : ""}">
+        <div class="sc-head">
+          <div class="sc-emoji">${p.emoji}</div>
+          <div style="flex: 1;">
+            <div class="sc-title">${p.name}${isBest ? '<span class="badge-best">最匹配</span>' : ""}</div>
+            <div style="font-size: 11px; color: #888;">${p.tag} · 需 Lv${p.minLv}+ / ${p.minPlots}块+</div>
+          </div>
+          <div class="sc-score">
+            ${isLocked ? `<span style="color: #c04040; font-size: 11px;">🔒 ${p.eval.reason}</span>` :
+              `匹配度 <b>${p.eval.score}</b>
+              <div class="score-bar" style="width:60px;"><div class="score-fill" style="width:${p.eval.score}%;"></div></div>`}
+          </div>
+        </div>
+
+        <div style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 8px;">${p.desc}</div>
+
+        <div class="mix-bar">
+          ${p.mix.map(m => `<div class="mix-seg ${m.color}" style="flex: ${m.pct};">${em(m.crop)} ${m.crop} ${m.pct}%</div>`).join("")}
+        </div>
+
+        <div class="sc-meta">
+          ${p.meta.map(t => {
+            const parts = t.split(" ");
+            const lbl = parts[0];
+            const val = parts.slice(1).join(" ");
+            return `<div>${lbl}<b>${val}</b></div>`;
+          }).join("")}
+        </div>
+
+        <div style="font-size: 12px; color: #444; margin-top: 6px;">
+          ${p.schedule.map(([t, act]) => `<div class="timeline-row"><span class="t">${t}</span><span>${act}</span></div>`).join("")}
+        </div>
+      </div>`;
+  }).join("");
+
+  box.innerHTML = summary + cards;
+}
+
+function renderLifestyleOptions() {
+  const box = document.getElementById("lifestyle-options");
+  box.innerHTML = LIFESTYLES.map(l => `
+    <div class="lifestyle-card" data-id="${l.id}">
+      <div class="lf-head">${l.emoji} ${l.name}</div>
+      <div class="lf-slot">${l.slot}</div>
+    </div>
+  `).join("");
+  box.querySelectorAll(".lifestyle-card").forEach(el => {
+    el.onclick = () => {
+      box.querySelectorAll(".lifestyle-card").forEach(x => x.classList.remove("selected"));
+      el.classList.add("selected");
+    };
+  });
+}
+renderLifestyleOptions();
+
+// ========== 人格测试 · 20 题 × 4 维度 ==========
+// 维度说明：
+//   G+ 肝度 / G- 佛度
+//   S+ 社交 / S- 独行
+//   T+ 策略 / T- 直觉
+//   M+ 经济 / M- 经验
+// 每道题的选项在一个维度上 +2/+1/-1/-2，20 题均匀分布在 4 维度。
+const QUESTIONS = [
+  // --- 维度 1：肝度 G / 佛度 F ---
+  { q: "早上 5 点农场刷新任务和祝福次数，你会？", opts: [
+    { t: "定闹钟爬起来做任务，一条都不能漏", s: { G: 2 } },
+    { t: "醒来第一件事摸手机清任务", s: { G: 1 } },
+    { t: "等中午间隙顺手做一下", s: { G: -1 } },
+    { t: "刷不刷新跟我有什么关系", s: { G: -2 } }
+  ]},
+  { q: "周末变异作物 32h 成熟，浇水怎么卡？", opts: [
+    { t: "精确到分钟定闹钟", s: { G: 2 } },
+    { t: "大致卡点，±1 小时能接受", s: { G: 1 } },
+    { t: "有空就浇，没空算了", s: { G: -1 } },
+    { t: "浇水也分时辰？", s: { G: -2 } }
+  ]},
+  { q: "每日对局任务领农场币，你？", opts: [
+    { t: "再累也要打完那一把", s: { G: 2 } },
+    { t: "尽量打，能打就打", s: { G: 1 } },
+    { t: "有心情就打", s: { G: -1 } },
+    { t: "我都不知道有这任务", s: { G: -2 } }
+  ]},
+  { q: "假如游戏给你加一个稻草人防偷系统，你会？", opts: [
+    { t: "攒够金币立刻升顶配，永不被偷", s: { G: 2 } },
+    { t: "日常升级，保持在线玩家平均水平", s: { G: 1 } },
+    { t: "被偷几次有感觉了再升", s: { G: -1 } },
+    { t: "爱谁偷谁偷，反正还会长", s: { G: -2 } }
+  ]},
+  { q: "开不开收菜推送通知？", opts: [
+    { t: "必开，精确到分钟提醒，一秒不差", s: { G: 2 } },
+    { t: "开，只在关键时段（晚上/周末）", s: { G: 1 } },
+    { t: "关了，太烦人", s: { G: -1 } },
+    { t: "推送是什么？从没开过", s: { G: -2 } }
+  ]},
+  { q: "新等级解锁新作物，你会？", opts: [
+    { t: "立刻全地改种新作物", s: { G: 2 } },
+    { t: "种几块先试试效率", s: { G: 1 } },
+    { t: "等攻略出了再决定", s: { G: -1 } },
+    { t: "没发现我解锁了", s: { G: -2 } }
+  ]},
+
+  // --- 维度 2：社交 S / 独行 L ---
+  { q: "好友留言求你去他家祝福作物？", opts: [
+    { t: "秒回秒去，祝福三连", s: { S: 2 } },
+    { t: "一有空就去", s: { S: 1 } },
+    { t: "等我忙完再看", s: { S: -1 } },
+    { t: "祝福是要我上线才行吗，那算了", s: { S: -2 } }
+  ]},
+  { q: "打开农场发现自己作物快被偷光，只剩一半了？", opts: [
+    { t: "查记录锁定小偷，立刻去他家反偷回来", s: { S: 2 } },
+    { t: "群里吐槽一下，但不记仇", s: { S: 1 } },
+    { t: "默默把那位好友从列表里删了", s: { S: -1 } },
+    { t: "没什么反应，被偷就被偷", s: { S: -2 } }
+  ]},
+  { q: "好友突然连续一周不上线，你会？", opts: [
+    { t: "主动去他家祝福，留言催他回来", s: { S: 2 } },
+    { t: "发一条消息问问最近怎么了", s: { S: 1 } },
+    { t: "等他自己回来，不打扰", s: { S: -1 } },
+    { t: "没注意到他消失了", s: { S: -2 } }
+  ]},
+  { q: "一个不认识的人加你农场好友？", opts: [
+    { t: "立刻接受，多一个祝福源", s: { S: 2 } },
+    { t: "看看资料再说", s: { S: 1 } },
+    { t: "忽略掉", s: { S: -1 } },
+    { t: "直接拉黑", s: { S: -2 } }
+  ]},
+  { q: "群里有人晒英雄变异作物？", opts: [
+    { t: "立刻点赞夸奖，真诚羡慕", s: { S: 2 } },
+    { t: "回个表情包恭喜", s: { S: 1 } },
+    { t: "默默划过去", s: { S: -1 } },
+    { t: "我根本不看群", s: { S: -2 } }
+  ]},
+  { q: "你的农场好友数量？", opts: [
+    { t: "加满上限，不断扩充", s: { S: 2 } },
+    { t: "十几个活跃互动的", s: { S: 1 } },
+    { t: "零散几个老友", s: { S: -1 } },
+    { t: "只有我自己一个", s: { S: -2 } }
+  ]},
+
+  // --- 维度 3：策略 T / 直觉 I ---
+  { q: "选作物的核心原则？", opts: [
+    { t: "精确计算收益/小时和经验/小时", s: { T: 2 } },
+    { t: "按攻略建议种", s: { T: 1 } },
+    { t: "凭感觉，看哪个顺眼", s: { T: -1 } },
+    { t: "解锁啥种啥", s: { T: -2 } }
+  ]},
+  { q: "自然变异概率 20%，种了 10 株没变异？", opts: [
+    { t: "冷静：符合期望，继续种", s: { T: 2 } },
+    { t: "再种 10 株平均一下", s: { T: 1 } },
+    { t: "换个作物试试手气", s: { T: -1 } },
+    { t: "哇脸好黑，骂策划", s: { T: -2 } }
+  ]},
+  { q: "选作物会考虑颜值/外观吗？", opts: [
+    { t: "只看效率，丑到爆也种", s: { T: 2 } },
+    { t: "效率优先，外观不影响决策", s: { T: 1 } },
+    { t: "好看的优先，差不多的就选颜值", s: { T: -1 } },
+    { t: "必须好看，一排作物要色彩协调", s: { T: -2 } }
+  ]},
+  { q: "周末活动前一周，你会？", opts: [
+    { t: "查攻略、建表格、模拟收益曲线", s: { T: 2 } },
+    { t: "看几篇攻略心里有数", s: { T: 1 } },
+    { t: "周末到了随机应变", s: { T: -1 } },
+    { t: "我不做准备这种事", s: { T: -2 } }
+  ]},
+  { q: "小摊升级时机？", opts: [
+    { t: "金币够就升，算过回本周期", s: { T: 2 } },
+    { t: "看到能升就升", s: { T: 1 } },
+    { t: "顺手升一次", s: { T: -1 } },
+    { t: "小摊是什么？", s: { T: -2 } }
+  ]},
+  { q: "面对周末变异活动？", opts: [
+    { t: "提前一周规划时间表", s: { T: 2 } },
+    { t: "周四晚上研究下行动计划", s: { T: 1 } },
+    { t: "周末临时看情况", s: { T: -1 } },
+    { t: "工作日和周末没区别", s: { T: -2 } }
+  ]},
+
+  // --- 维度 4：经济 M / 经验 X ---
+  { q: "你的终极目标？", opts: [
+    { t: "金币最大化，越多越有安全感", s: { M: 2 } },
+    { t: "偏重金币兼顾等级", s: { M: 1 } },
+    { t: "偏重经验兼顾收益", s: { M: -1 } },
+    { t: "等级至上，金币只是副产品", s: { M: -2 } }
+  ]},
+  { q: "16h 柚子（高钱低经验）vs 16h 南瓜（高经验低钱）？", opts: [
+    { t: "必选柚子", s: { M: 2 } },
+    { t: "60% 柚子 + 40% 南瓜", s: { M: 1 } },
+    { t: "60% 南瓜 + 40% 柚子", s: { M: -1 } },
+    { t: "必选南瓜", s: { M: -2 } }
+  ]},
+  { q: "攒够 50 万金币先做什么？", opts: [
+    { t: "买高级种子继续赚钱", s: { M: 2 } },
+    { t: "升级小摊提高售价", s: { M: 1 } },
+    { t: "开新地换经验奖励升等级", s: { M: -1 } },
+    { t: "开新地解锁新作物种类", s: { M: -2 } }
+  ]},
+  { q: "英雄变异触发时你最开心的是？", opts: [
+    { t: "能卖一笔大钱", s: { M: 2 } },
+    { t: "经验顺便赚一笔", s: { M: 1 } },
+    { t: "经验丰厚升级快", s: { M: -1 } },
+    { t: "又可以解锁新作物了", s: { M: -2 } }
+  ]},
+  { q: "如果有按钮能立刻把所有作物卖掉换金币？", opts: [
+    { t: "立刻按，我要钱", s: { M: 2 } },
+    { t: "看情况，大多数时候会按", s: { M: 1 } },
+    { t: "不按，我要等它们成熟给经验", s: { M: -1 } },
+    { t: "绝对不按，我等英雄变异", s: { M: -2 } }
+  ]},
+  { q: "卡着一个关键等级升不上去，你怎么办？", opts: [
+    { t: "疯狂卖高级作物换金币囤种子", s: { M: 2 } },
+    { t: "金币要攒，慢慢来不急", s: { M: 1 } },
+    { t: "改种高经验作物冲等级", s: { M: -1 } },
+    { t: "全速冲等级，金币是顺带的", s: { M: -2 } }
+  ]}
+];
+
+// ========== 16 型人格 ==========
+// 类型码：[G|F][S|L][T|I][M|X]
+const TAGS = {
+  GSTM: { name: "农场CEO", stat: "你的朋友圈人均农场卷王，而你是他们的 CEO。", desc: "你把这个农场玩法当成一家真正的公司在运营：员工（好友）你亲自考察后招聘，KPI（祝福次数、收益/小时）你比老板还上心。周末变异日你当作财报季来打——时间表、人力调度、风险对冲一应俱全。朋友圈因为你的存在多了一个传销文化，但大家都甘愿入伙，因为你的农场真的在赚钱。" },
+  GSTX: { name: "升级宣教士", stat: "你的好友群被你改造成了升级互助会。", desc: "你不满足于自己升级，还要带着全好友群一起升。日常对局任务你提前建好轮换表，谁还没打哪个模式你一清二楚。你研究过每种作物的经验/小时曲线，并制作了一张攻略分享给群友。你的人生信条：升级一个人走快，和朋友一起才走得远。" },
+  GSIM: { name: "欧气经济官", stat: "你的玄学体系里，5 点整上线差一秒都会泄气。", desc: "你相信运气不是玄学而是信念的自我实现，为此你搭建了一套完整的玄学农场：动员好友给你祝福、精确在 5 点上线、为英雄变异赌整个周末。你卖作物那一刻是你朋友圈最高光的时刻：'来，看爷变出什么。'" },
+  GSIX: { name: "变异信徒", stat: "你的农场像小神殿，好友来了要拜三拜才能祝福。", desc: "你是种田圈的信仰派：相信只要心诚，英雄变异一定会来。你召集好友为你祝福不为收益，而为一种'虔诚的期待'。每次真的触发英雄变异你都会截图发群里，配文'信则灵'。" },
+  GLTM: { name: "冷血资本家", stat: "你的金币数是朋友圈最大，好友列表是最短。", desc: "你进农场不为社交不为娱乐，就是赚钱。你的好友列表里只有'有祝福价值'的人——等级、活跃度、能否互祝你都算过。你从不主动串门，但每次串门都精确带来 ROI。你的稻草人最贵，摆件最赚，金币最多。" },
+  GLTX: { name: "单刷攻略党", stat: "你的升级速度碾压所有人，但没人知道你怎么做到的。", desc: "你一个人就能把农场玩成一本学术论文。你有自己的表格记录每种作物的经验增量、每次升级的经验缺口。你不看攻略因为别人的都不如你自己的精确。你的升级速度碾压所有人，但没人知道你是怎么做到的，因为你一句话都不说。" },
+  GLIM: { name: "欧皇独行侠", stat: "你一个人搞出一个金库，还没人来蹭。", desc: "你一个人就能搞出一个金库。你相信自己是欧的，不依赖好友祝福，自己种自己变异。你只认一个指标：钱。你对需要社交的一切免疫，但对每次英雄变异触发都像过节。你的金币数很夸张，但除了你自己没人知道。" },
+  GLIX: { name: "禅意种田人", stat: "你像住在终南山里的隐世高手，偶尔下山亮一手。", desc: "你肝但不卷——你只是在以修行的心态专注种地。你精确卡点浇水，不是为最大化收益，而是为完成一种仪式感。你从不看攻略也不社交，但你总能种出令人惊讶的结果。你像住在终南山里的隐世高手，偶尔下山亮一手。" },
+  FSTM: { name: "悠闲商务型", stat: "你的农场像社区小超市，主客都开心。", desc: "你不追求极致但要稳稳赚钱。你算过账：一天上线 3 次刚好能收完作物，多的不必。你享受和好友聊天顺便偷菜的乐趣，但不会为一次变异熬到凌晨。你的农场像社区小超市——不大，但进出稳定，主客都开心。" },
+  FSTX: { name: "佛系老学徒", stat: "你的升级像散步，沿途有朋友就聊两句。", desc: "你想升级，但不赶时间。你愿意和朋友交换升级心得，但绝不会为升级而牺牲睡眠。你懂每种作物的经验/小时，但是'曾经算过一次，以后就记着'。你把升级当成一场散步，沿途有朋友就聊两句，不赶路。" },
+  FSIM: { name: "快乐小商贩", stat: "你的金币不是最多，但你的农场最热闹。", desc: "你不算账，你只是单纯觉得赚钱好玩。种什么凭心情，但种出英雄变异会兴奋地在群里大呼小叫。你的金币不是最多的，但你的农场是最热闹的。好友们都爱来你家串门，因为你会分享八卦也会分享成熟作物。" },
+  FSIX: { name: "种田小姐妹", stat: "你们升级慢没关系，因为你们是一起慢的。", desc: "你种田不是为了升级，是为了和姐妹们一起种田的快乐。你们约好一起种同一种作物，一起等成熟，一起收获。你的农场和好友们的农场像一片连在一起的村庄——你们彼此认识每一株作物。升级慢没关系，因为你们是一起慢的。" },
+  FLTM: { name: "沉默理财者", stat: "你把农场当作 ATM：需要时按几下，不需要时锁上门。", desc: "你偶尔上线，但每次上线都精确赚一笔。你不串门不祝福，但你的金币稳步增长。你把农场当成 ATM：需要时按几下，不需要时锁上门。朋友不知道你在玩农场，但你的小摊等级比他们高多了。" },
+  FLTX: { name: "冥想耕耘师", stat: "你打开好友列表只为确认他们还在卷，然后会心一笑关掉。", desc: "你不紧不慢地上线，但每次都有明确目标：升一级，或解锁一个新作物。你不和别人比进度，只和自己昨天比。你的升级过程像冥想——稳定、清晰、个人化。你偶尔打开好友列表只为确认'他们还在卷'，然后会心一笑关掉。" },
+  FLIM: { name: "一人经济学", stat: "朋友问你农场玩得怎么样，你说'挺好'，然后想不起具体哪里好。", desc: "你偶尔来一下农场，随便种几株随便卖，顺手赚点零花。你不算账不社交，但你觉得这样挺好——有点小收获就行。你的农场经济模式极简，但你自我感觉很良好。朋友有时问你农场玩得怎么样，你说'挺好的'，然后想不起来具体怎么好。" },
+  FLIX: { name: "挂机艺术家", stat: "你上一次收菜是 6 天 14 小时前，但你的心态完全稳定。", desc: "你玩这个农场的方式非常哲学：进游戏不是为了种地，种地不是为了变异，变异不是为了收益。你可能一周只打开农场一次，打开了只看一眼就退出。任务没做、祝福没领、稻草人从没升级——但你也不焦虑，因为你根本不在意。你把这个玩法当成游戏的背景音，静静存在着就好。" }
+};
+
+let qi = 0;
+let answers = [];  // answers[qi] = 选项索引（可为 null）
+let dims = { G: 0, S: 0, T: 0, M: 0 };
+
+function renderQ() {
+  const q = QUESTIONS[qi];
+  const total = QUESTIONS.length;
+  document.getElementById("q-progress").textContent = `第 ${qi + 1} / ${total} 题`;
+  document.getElementById("q-bar-fill").style.width = `${((qi + 1) / total) * 100}%`;
+  document.getElementById("q-text").textContent = q.q;
+  const box = document.getElementById("q-options");
+  box.innerHTML = "";
+  q.opts.forEach((o, i) => {
+    const d = document.createElement("div");
+    d.className = "option" + (answers[qi] === i ? " picked" : "");
+    d.textContent = o.t;
+    d.onclick = () => pick(i);
+    box.appendChild(d);
+  });
+  // 按钮状态
+  document.getElementById("btn-prev").disabled = qi === 0;
+  const next = document.getElementById("btn-next");
+  next.disabled = answers[qi] == null;
+  next.textContent = qi === total - 1 ? "查看结果 →" : "下一题 →";
+}
+
+function pick(i) {
+  answers[qi] = i;
+  // 只更新当前题的 UI，不直接改 dims（最后统一计算）
+  document.querySelectorAll("#q-options .option").forEach((el, idx) => {
+    el.classList.toggle("picked", idx === i);
+  });
+  document.getElementById("btn-next").disabled = false;
+}
+
+function goPrev() {
+  if (qi > 0) { qi--; renderQ(); }
+}
+function goNext() {
+  if (answers[qi] == null) return;
+  if (qi < QUESTIONS.length - 1) { qi++; renderQ(); }
+  else finishTest();
+}
+function finishTest() {
+  // 根据所有 answers 统一计算 dims
+  dims = { G: 0, S: 0, T: 0, M: 0 };
+  answers.forEach((idx, qq) => {
+    if (idx == null) return;
+    const opt = QUESTIONS[qq].opts[idx];
+    Object.entries(opt.s).forEach(([k, v]) => dims[k] += v);
+  });
+  showResult();
+}
+
+let currentTag = null, currentCode = null;
+
+function showResult() {
+  currentCode =
+    (dims.G >= 0 ? "G" : "F") +
+    (dims.S >= 0 ? "S" : "L") +
+    (dims.T >= 0 ? "T" : "I") +
+    (dims.M >= 0 ? "M" : "X");
+  const tag = TAGS[currentCode];
+  currentTag = tag;
+  document.getElementById("r-tag").textContent = tag.name;
+  document.getElementById("r-code").textContent = currentCode + " 型";
+  document.getElementById("r-desc").textContent = tag.desc;
+  document.getElementById("r-stat").textContent = tag.stat;
+  document.getElementById("r-bars").innerHTML = renderBars();
+  document.getElementById("test-quiz").classList.add("hidden");
+  document.getElementById("test-result").classList.remove("hidden");
+  // 自动生成海报（不需要用户点按钮）
+  drawPoster();
+}
+
+function renderBars() {
+  // 每维度最大值约 ±10（5 题 × ±2），转成 0-100% 条
+  const pairs = [
+    { k: "G", pos: "肝度 G", neg: "佛度 F", max: 10 },
+    { k: "S", pos: "社交 S", neg: "独行 L", max: 10 },
+    { k: "T", pos: "策略 T", neg: "直觉 I", max: 10 },
+    { k: "M", pos: "经济 M", neg: "经验 X", max: 10 }
+  ];
+  return pairs.map(p => {
+    const v = dims[p.k];
+    const pct = Math.max(0, Math.min(100, 50 + (v / p.max) * 50));
+    const leaning = v >= 0 ? p.pos : p.neg;
+    return `
+      <div style="margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 2px;">
+          <span>${p.neg}</span><b style="color: #4a7c59;">${leaning}</b><span>${p.pos}</span>
+        </div>
+        <div style="height: 8px; background: #eee; border-radius: 4px; position: relative;">
+          <div style="position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: #999;"></div>
+          <div style="height: 100%; background: linear-gradient(90deg, #a8d5b1, #4a7c59); border-radius: 4px; width: ${pct}%;"></div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ========== 海报生成 ==========
+// 布局（canvas 750×1280）：
+//   0–110    顶部标题栏
+//   110–650  角色立绘（540px 高）
+//   650–720  类型码
+//   720–810  人格名大字
+//   810–1110 描述卡片（含 stat 条）
+//   1110–1280 底部 CTA
+// 本地 file:// 协议下禁用 crossOrigin，否则图片会被 CORS 拦截。
+
+function drawPoster() {
+  const canvas = document.getElementById("poster-canvas");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+  drawPosterBackground(ctx, W, H);
+
+  const img = new Image();
+  img.onload = () => {
+    drawCharacterImage(ctx, W, img);
+    drawPosterForeground(ctx, W, H);
+  };
+  img.onerror = () => {
+    drawPlaceholder(ctx, W);
+    drawPosterForeground(ctx, W, H);
+  };
+  img.src = `images/${currentCode}.png`;
+}
+
+function drawPosterBackground(ctx, W, H) {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, "#fff8e0");
+  grad.addColorStop(0.45, "#e8f0d0");
+  grad.addColorStop(1, "#a8d5b1");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 顶部白条标题
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  roundRect(ctx, 200, 35, 350, 60, 30);
+  ctx.fill();
+  ctx.fillStyle = "#3a5a3a";
+  ctx.font = "bold 28px -apple-system, PingFang SC, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("我的农场人格", W / 2, 74);
+}
+
+function drawCharacterImage(ctx, W, img) {
+  // 在 y=110 到 y=650 的 540px 高度内等比居中
+  const bandTop = 110, bandH = 540, maxW = 560;
+  const ratio = Math.min(maxW / img.width, bandH / img.height);
+  const w = img.width * ratio, h = img.height * ratio;
+  const x = (W - w) / 2, y = bandTop + (bandH - h) / 2;
+  ctx.drawImage(img, x, y, w, h);
+}
+
+function drawPlaceholder(ctx, W) {
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  roundRect(ctx, W / 2 - 220, 170, 440, 440, 24);
+  ctx.fill();
+  ctx.strokeStyle = "#4a7c59";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 6]);
+  roundRect(ctx, W / 2 - 220, 170, 440, 440, 24);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#4a7c59";
+  ctx.font = "bold 22px -apple-system, PingFang SC, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("未找到角色图片", W / 2, 380);
+  ctx.font = "16px -apple-system, PingFang SC, sans-serif";
+  ctx.fillStyle = "#666";
+  ctx.fillText(`请放置：images/${currentCode}.png`, W / 2, 410);
+}
+
+function drawPosterForeground(ctx, W, H) {
+  // 类型码小标
+  ctx.fillStyle = "#4a7c59";
+  ctx.font = "bold 26px -apple-system, PingFang SC, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`— ${currentCode} 型 —`, W / 2, 690);
+
+  // 人格名大字（描边+填充，增强可读性）
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#2a5a3a";
+  ctx.lineWidth = 7;
+  ctx.font = "bold 62px -apple-system, PingFang SC, sans-serif";
+  ctx.strokeText(currentTag.name, W / 2, 770);
+  ctx.fillText(currentTag.name, W / 2, 770);
+
+  // 描述卡片
+  const cardX = 50, cardY = 810, cardW = 650, cardH = 300;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+  ctx.fill();
+
+  // 描述文本
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "left";
+  ctx.font = "24px -apple-system, PingFang SC, sans-serif";
+  wrapText(ctx, currentTag.desc, cardX + 30, cardY + 45, cardW - 60, 36);
+
+  // stat 高亮条
+  const barY = cardY + cardH - 55;
+  ctx.fillStyle = "#fff3d0";
+  roundRect(ctx, cardX + 25, barY, cardW - 50, 42, 10);
+  ctx.fill();
+  ctx.fillStyle = "#8a5a00";
+  ctx.font = "bold 19px -apple-system, PingFang SC, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(currentTag.stat, W / 2, barY + 27);
+
+  // 底部 CTA
+  ctx.fillStyle = "#2a5a3a";
+  ctx.font = "bold 28px -apple-system, PingFang SC, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("你是哪种农民？扫码来测测", W / 2, 1145);
+
+  ctx.font = "18px -apple-system, PingFang SC, sans-serif";
+  ctx.fillStyle = "#555";
+  ctx.fillText("农场规划器 · 24 题测人格 + 种植推荐", W / 2, 1180);
+
+  // 真实二维码（扫码直达当前部署的网址）
+  drawQRCode(ctx, W);
+}
+
+function drawQRCode(ctx, W) {
+  const url = window.location.href.startsWith("http") ? window.location.href : "https://github.com";
+  const qrSize = 140, qrX = (W - qrSize) / 2, qrY = 1200;
+  // 白底
+  ctx.fillStyle = "#fff";
+  roundRect(ctx, qrX - 6, qrY - 6, qrSize + 12, qrSize + 12, 8);
+  ctx.fill();
+  if (typeof QRCode === "undefined") {
+    // 库没加载：画占位框
+    ctx.fillStyle = "#888";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("QR 加载中", W / 2, qrY + qrSize / 2);
+    return;
+  }
+  QRCode.toDataURL(url, { width: qrSize, margin: 0 }, (err, dataUrl) => {
+    if (err) return;
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    img.src = dataUrl;
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const chars = text.split("");
+  let line = "", lineY = y;
+  for (const c of chars) {
+    const test = line + c;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, lineY);
+      line = c;
+      lineY += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, lineY);
+}
+
+function downloadPoster() {
+  const canvas = document.getElementById("poster-canvas");
+  try {
+    const link = document.createElement("a");
+    link.download = `农场人格_${currentTag.name}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (e) {
+    // 本地 file:// 打开时 canvas 可能被 CORS 污染，无法导出
+    document.getElementById("download-hint").textContent =
+      "本地打开时浏览器可能禁止自动下载，请右键海报 → 图片另存为。";
+    document.getElementById("download-hint").style.color = "#c0a040";
+  }
+}
+
+// ========== 导航 ==========
+function show(v) {
+  ["planner", "weekend", "test"].forEach(x => {
+    document.getElementById("view-" + x).classList.toggle("hidden", x !== v);
+    document.getElementById("nav-" + x).className = x === v ? "" : "secondary";
+  });
+  if (v === "weekend") renderWeekend();
+}
+
+document.getElementById("nav-planner").onclick = () => show("planner");
+document.getElementById("nav-weekend").onclick = () => show("weekend");
+document.getElementById("nav-test").onclick = () => show("test");
+
+document.querySelectorAll(".mode-btn").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".mode-btn").forEach(x => x.classList.add("secondary"));
+    b.classList.remove("secondary");
+    // 作息模式显示/隐藏选择器
+    const picker = document.getElementById("lifestyle-picker");
+    if (b.dataset.mode === "lifestyle") picker.classList.remove("hidden");
+    else picker.classList.add("hidden");
+  };
+});
+
+document.getElementById("btn-plan").onclick = renderPlan;
+document.getElementById("btn-weekend").onclick = renderWeekend;
+
+function resetTest() {
+  qi = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  dims = { G: 0, S: 0, T: 0, M: 0 };
+}
+document.getElementById("btn-start").onclick = () => {
+  resetTest();
+  document.getElementById("test-intro").classList.add("hidden");
+  document.getElementById("test-quiz").classList.remove("hidden");
+  renderQ();
+};
+document.getElementById("btn-retry").onclick = () => {
+  resetTest();
+  document.getElementById("test-result").classList.add("hidden");
+  document.getElementById("test-intro").classList.remove("hidden");
+};
+document.getElementById("btn-prev").onclick = goPrev;
+document.getElementById("btn-next").onclick = goNext;
+// 动态写入题目数量
+document.getElementById("intro-count").textContent = `${QUESTIONS.length} 道题，3 分钟出结果。`;
+document.getElementById("btn-to-planner").onclick = () => show("planner");
+document.getElementById("btn-download").onclick = downloadPoster;
+</script>
+</body>
+</html>
